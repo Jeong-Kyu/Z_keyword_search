@@ -9,20 +9,27 @@ import time
 import pandas as pd
 
 def get_chrome_driver():
-    """헤드리스 크롬 드라이버 설정"""
+    """헤드리스 크롬 드라이버 설정 (Streamlit Cloud 호환)"""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     
-    # 배포 환경에서 사용할 수 있는 크롬드라이버 설정
+    # Streamlit Cloud 환경에서 작동하는 방식
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-    except:
-        # 백업 방법: 배포 환경에 설치된 크롬드라이버 사용
-        driver = webdriver.Chrome(options=chrome_options)
+        # Streamlit Cloud의 고정된 ChromeDriver 경로 사용
+        driver = webdriver.Chrome(
+            executable_path="/usr/bin/chromedriver",
+            options=chrome_options
+        )
+    except Exception as e:
+        # 로컬 환경에서는 기존 방식 사용
+        try:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+        except Exception as e2:
+            raise Exception(f"Chrome 드라이버 초기화 실패: {str(e)} / {str(e2)}")
     
     return driver
 
