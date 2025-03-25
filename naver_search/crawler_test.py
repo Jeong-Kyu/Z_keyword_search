@@ -64,68 +64,66 @@ def get_chrome_driver():
                 print(error_message)
                 raise Exception(error_message)
 
-def get_naver_keywords(query):
-    """네이버 연관 검색어 크롤링 (디버깅 버전)"""
+def get_naver_keywords(search_query):
+    """네이버 연관 검색어 크롤링"""
     driver = None
     try:
         driver = get_chrome_driver()
         
-        # 사람처럼 보이기 위한 User-Agent 설정
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": user_agent})
+        # 결과 저장용 딕셔너리
+        results = {
+            "연관 검색어": [],
+            "함께 많이 찾는 검색어": [],
+            "인기주제": []
+        }
         
-        # 네이버 접속
-        print(f"[디버깅] 네이버 접속 시도: {query}")
-        url = f"https://search.naver.com/search.naver?query={query}"
+        # 네이버 검색 페이지 접속
+        url = f"https://search.naver.com/search.naver?query={search_query}"
         driver.get(url)
         
-        # 현재 URL 확인 (리다이렉트 여부 확인)
-        current_url = driver.current_url
-        print(f"[디버깅] 현재 URL: {current_url}")
+        # 페이지 로딩 대기
+        time.sleep(2)
         
-        # 페이지 제목 확인 (봇 감지 페이지인지 확인)
-        page_title = driver.title
-        print(f"[디버깅] 페이지 제목: {page_title}")
+        # 연관검색어 추출
+        try:
+            related_keywords = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".api_subject_bx._related_box .keyword"))
+            )
+            for keyword in related_keywords:
+                results["연관 검색어"].append(keyword.text)
+            
+        except:
+            pass
         
-        # 페이지 소스 일부분 확인
-        source_sample = driver.page_source[:1000]
-        print(f"[디버깅] 페이지 소스 샘플: {source_sample}")
+        # 함께 많이 찾는 검색어 추출
+        try:
+            also_searched = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".Vswg4IEeZW7Er49y9Ynv.desktop_mode.api_subject_bx\
+                                                     .sds-comps-text.sds-comps-text-ellipsis-1.sds-comps-text-type-body1.Z0vjYVhL1FzPk2dIMRIC"))
+            )
+            for keyword in also_searched:
+                results["함께 많이 찾는 검색어"].append(keyword.text)
+                
+        except:
+            pass
         
-        # 봇 감지 관련 텍스트 확인
-        bot_indicators = ["로봇", "자동화", "비정상적인", "robot", "captcha", "unusual", "automated"]
-        for indicator in bot_indicators:
-            if indicator in driver.page_source:
-                print(f"[디버깅] 봇 감지 가능성: '{indicator}' 텍스트 발견")
-        
-        # 점진적 대기 후 요소 확인
-        wait_times = [3, 5, 8, 10]
-        for wait in wait_times:
-            time.sleep(wait)
-            elements = driver.find_elements(By.CSS_SELECTOR, "._related_keyword_ul ._related_keyword_item")
-            print(f"[디버깅] {wait}초 대기 후 요소 수: {len(elements)}")
-            if elements:
-                break
-        
-        # 나머지 로직 계속
-        keywords = []
-        for element in elements:
-            keywords.append(element.text.strip())
-        
-        print(f"[디버깅] 최종 추출된 키워드: {keywords}")
-        return keywords
-        
+        # 인기주제 추출
+        try:
+            popular_topics = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "._0ar69x2aJ9m4OgcLLgB.desktop_mode.api_subject_bx\
+                                                     .gtMPKdW185oeqQJX52p6.fds-comps-keyword-chip-text.KMVxnGU7z0BmkoiR0hFq"))
+            )
+            for topic in popular_topics:
+                results["인기주제"].append(topic.text)
+        except:
+            pass
+            
+        return results  # 결과 반환
     except Exception as e:
-        print(f"[디버깅] 예외 발생: {str(e)}")
-        # 예외 발생 시 스크린샷 저장 (가능한 경우)
-        if driver:
-            try:
-                screenshot_path = f"error_screenshot_{int(time.time())}.png"
-                driver.save_screenshot(screenshot_path)
-                print(f"[디버깅] 스크린샷 저장됨: {screenshot_path}")
-            except:
-                pass
-        return []
+        print(f"키워드 추출 중 오류 발생: {str(e)}")
+        return []  # 오류 발생 시 빈 리스트 반환
     finally:
+        # driver가 None이 아닌 경우에만 quit() 호출
         if driver is not None:
             try:
                 driver.quit()

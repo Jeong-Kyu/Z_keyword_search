@@ -124,4 +124,20 @@ if st.session_state.search_results:
 
 # 페이지 하단 정보
 st.markdown("---")
-st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.") 
+st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.")
+
+def main():
+    # 디버깅 섹션 추가
+    with st.expander("디버깅 정보"):
+        if st.button("디버깅 테스트 실행"):
+            debug_info = []
+            # 디버깅 함수로 수정 (출력 대신 리스트에 정보 추가)
+            def debug_print(info):
+                debug_info.append(info)
+                
+            # 여기서 크롤링 코드 실행하고 debug_print 함수 사용
+            # ... 크롤링 코드 ...
+            
+            # 디버깅 정보 표시
+            for info in debug_info:
+                st.text(info) 
