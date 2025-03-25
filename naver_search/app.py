@@ -53,6 +53,13 @@ def get_excel_download_link(df, filename="keywords_data.xlsx"):
     href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{filename}">엑셀 파일 다운로드</a>'
     return href
 
+# 전역 변수로 디버깅 정보 저장
+debug_logs = []
+
+def log_debug(message):
+    """디버깅 정보 로깅"""
+    debug_logs.append(message)
+
 # 검색 버튼이 클릭되었을 때
 if submit_button and query:
     with st.spinner("네이버에서 데이터를 가져오는 중..."):
@@ -127,6 +134,30 @@ st.markdown("---")
 st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.")
 
 def main():
+    # 디버깅 섹션 추가 (항상 표시)
+    st.subheader("디버깅 정보")
+    if st.button("테스트 실행"):
+        # 디버깅 로그 초기화
+        global debug_logs
+        debug_logs = []
+        
+        # 테스트 키워드로 크롤링 실행
+        test_keyword = "파이썬"
+        log_debug(f"테스트 키워드: {test_keyword}")
+        
+        try:
+            from crawler import get_naver_keywords
+            results = get_naver_keywords(test_keyword)
+            log_debug(f"반환된 결과: {results}")
+        except Exception as e:
+            log_debug(f"에러 발생: {str(e)}")
+    
+    # 디버깅 로그 표시
+    for log in debug_logs:
+        st.text(log)
+
+    # 검색어 입력 필드 등 기존 코드
+    
     # 디버깅 섹션 추가
     with st.expander("디버깅 정보"):
         if st.button("디버깅 테스트 실행"):

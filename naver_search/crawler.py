@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
+from app import log_debug  # 앱의 로깅 함수 가져오기
 
 def get_chrome_driver():
     """헤드리스 크롬 드라이버 설정 (Streamlit Cloud 호환)"""
@@ -68,69 +69,50 @@ def get_naver_keywords(query):
     """네이버 연관 검색어 크롤링 (디버깅 버전)"""
     driver = None
     try:
+        log_debug(f"크롤링 시작: {query}")
         driver = get_chrome_driver()
-        
-        # 사람처럼 보이기 위한 User-Agent 설정
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": user_agent})
+        log_debug("드라이버 초기화 성공")
         
         # 네이버 접속
-        print(f"[디버깅] 네이버 접속 시도: {query}")
         url = f"https://search.naver.com/search.naver?query={query}"
+        log_debug(f"URL 접속: {url}")
         driver.get(url)
+        log_debug("페이지 로드 완료")
         
-        # 현재 URL 확인 (리다이렉트 여부 확인)
+        # 현재 URL 확인
         current_url = driver.current_url
-        print(f"[디버깅] 현재 URL: {current_url}")
+        log_debug(f"현재 URL: {current_url}")
         
-        # 페이지 제목 확인 (봇 감지 페이지인지 확인)
+        # 페이지 제목 확인
         page_title = driver.title
-        print(f"[디버깅] 페이지 제목: {page_title}")
+        log_debug(f"페이지 제목: {page_title}")
         
-        # 페이지 소스 일부분 확인
-        source_sample = driver.page_source[:1000]
-        print(f"[디버깅] 페이지 소스 샘플: {source_sample}")
+        # 3초 대기
+        time.sleep(3)
+        log_debug("3초 대기 완료")
         
-        # 봇 감지 관련 텍스트 확인
-        bot_indicators = ["로봇", "자동화", "비정상적인", "robot", "captcha", "unusual", "automated"]
-        for indicator in bot_indicators:
-            if indicator in driver.page_source:
-                print(f"[디버깅] 봇 감지 가능성: '{indicator}' 텍스트 발견")
+        # 연관 검색어 찾기
+        elements = driver.find_elements(By.CSS_SELECTOR, "._related_keyword_ul ._related_keyword_item")
+        log_debug(f"연관 검색어 요소 수: {len(elements)}")
         
-        # 점진적 대기 후 요소 확인
-        wait_times = [3, 5, 8, 10]
-        for wait in wait_times:
-            time.sleep(wait)
-            elements = driver.find_elements(By.CSS_SELECTOR, "._related_keyword_ul ._related_keyword_item")
-            print(f"[디버깅] {wait}초 대기 후 요소 수: {len(elements)}")
-            if elements:
-                break
-        
-        # 나머지 로직 계속
+        # 결과 처리
         keywords = []
         for element in elements:
             keywords.append(element.text.strip())
         
-        print(f"[디버깅] 최종 추출된 키워드: {keywords}")
+        log_debug(f"추출된 키워드: {keywords}")
         return keywords
         
     except Exception as e:
-        print(f"[디버깅] 예외 발생: {str(e)}")
-        # 예외 발생 시 스크린샷 저장 (가능한 경우)
-        if driver:
-            try:
-                screenshot_path = f"error_screenshot_{int(time.time())}.png"
-                driver.save_screenshot(screenshot_path)
-                print(f"[디버깅] 스크린샷 저장됨: {screenshot_path}")
-            except:
-                pass
+        log_debug(f"에러 발생: {str(e)}")
         return []
     finally:
         if driver is not None:
             try:
                 driver.quit()
+                log_debug("드라이버 종료 완료")
             except:
-                pass
+                log_debug("드라이버 종료 실패")
 
 def create_keywords_dataframe(data):
     """데이터를 pandas DataFrame으로 변환"""
