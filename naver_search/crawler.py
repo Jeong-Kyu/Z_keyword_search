@@ -64,71 +64,58 @@ def get_chrome_driver():
                 print(error_message)
                 raise Exception(error_message)
 
-def get_naver_keywords(search_query):
-    """네이버 연관 검색어 크롤링"""
+def get_naver_keywords(query):
+    """네이버 연관 검색어 크롤링 (디버깅 버전)"""
+    from app import log_debug  # 앱의 로깅 함수 가져오기
+    
     driver = None
     try:
+        log_debug(f"크롤링 시작: {query}")
         driver = get_chrome_driver()
+        log_debug("드라이버 초기화 성공")
         
-        # 결과 저장용 딕셔너리
-        results = {
-            "연관 검색어": [],
-            "함께 많이 찾는 검색어": [],
-            "인기주제": []
-        }
-        
-        # 네이버 검색 페이지 접속
-        url = f"https://search.naver.com/search.naver?query={search_query}"
+        # 네이버 접속
+        url = f"https://search.naver.com/search.naver?query={query}"
+        log_debug(f"URL 접속: {url}")
         driver.get(url)
+        log_debug("페이지 로드 완료")
         
-        # 페이지 로딩 대기
-        time.sleep(2)
+        # 현재 URL 확인
+        current_url = driver.current_url
+        log_debug(f"현재 URL: {current_url}")
         
-        # 연관검색어 추출
-        try:
-            related_keywords = WebDriverWait(driver, 5).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".api_subject_bx._related_box .keyword"))
-            )
-            for keyword in related_keywords:
-                results["연관 검색어"].append(keyword.text)
-            
-        except:
-            pass
+        # 페이지 제목 확인
+        page_title = driver.title
+        log_debug(f"페이지 제목: {page_title}")
         
-        # 함께 많이 찾는 검색어 추출
-        try:
-            also_searched = WebDriverWait(driver, 5).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".Vswg4IEeZW7Er49y9Ynv.desktop_mode.api_subject_bx\
-                                                     .sds-comps-text.sds-comps-text-ellipsis-1.sds-comps-text-type-body1.Z0vjYVhL1FzPk2dIMRIC"))
-            )
-            for keyword in also_searched:
-                results["함께 많이 찾는 검색어"].append(keyword.text)
-                
-        except:
-            pass
+        # 3초 대기
+        import time
+        time.sleep(3)
+        log_debug("3초 대기 완료")
         
-        # 인기주제 추출
-        try:
-            popular_topics = WebDriverWait(driver, 5).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "._0ar69x2aJ9m4OgcLLgB.desktop_mode.api_subject_bx\
-                                                     .gtMPKdW185oeqQJX52p6.fds-comps-keyword-chip-text.KMVxnGU7z0BmkoiR0hFq"))
-            )
-            for topic in popular_topics:
-                results["인기주제"].append(topic.text)
-        except:
-            pass
-            
-        return results  # 결과 반환
+        # 연관 검색어 찾기
+        from selenium.webdriver.common.by import By
+        elements = driver.find_elements(By.CSS_SELECTOR, "._related_keyword_ul ._related_keyword_item")
+        log_debug(f"연관 검색어 요소 수: {len(elements)}")
+        
+        # 결과 처리
+        keywords = []
+        for element in elements:
+            keywords.append(element.text.strip())
+        
+        log_debug(f"추출된 키워드: {keywords}")
+        return keywords
+        
     except Exception as e:
-        print(f"키워드 추출 중 오류 발생: {str(e)}")
-        return []  # 오류 발생 시 빈 리스트 반환
+        log_debug(f"에러 발생: {str(e)}")
+        return []
     finally:
-        # driver가 None이 아닌 경우에만 quit() 호출
         if driver is not None:
             try:
                 driver.quit()
+                log_debug("드라이버 종료 완료")
             except:
-                pass
+                log_debug("드라이버 종료 실패")
 
 def create_keywords_dataframe(data):
     """데이터를 pandas DataFrame으로 변환"""
