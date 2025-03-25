@@ -5,15 +5,22 @@ from crawler import get_naver_keywords, create_keywords_dataframe
 import base64
 from io import BytesIO
 
-# 페이지 설정
+# 페이지 설정은 가장 첫 번째 Streamlit 명령어여야 함
 st.set_page_config(
-    page_title="네이버 검색어 분석기",
+    page_title="네이버 연관 검색어 추출기",
     page_icon="🔍",
     layout="wide"
 )
 
+# 전역 변수로 디버깅 정보 저장
+debug_logs = []
+
+def log_debug(message):
+    """디버깅 정보 로깅"""
+    debug_logs.append(message)
+
 # 제목 및 소개
-st.title("네이버 검색어 분석기 🔍")
+st.title("네이버 연관 검색어 추출기")
 st.markdown("""
 이 앱은 네이버에서 특정 검색어에 대한 연관 정보를 추출합니다:
 * **연관 검색어**
@@ -37,15 +44,18 @@ if "search_results" not in st.session_state:
     st.session_state.searched_query = None
 
 # 엑셀 다운로드 함수
-def get_excel_download_link(df, filename="keywords_data.xlsx"):
-    """DataFrame을 엑셀 파일로 변환하고 다운로드 링크 생성"""
+def to_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Keywords')
-    excel_data = output.getvalue()
-    b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{filename}">엑셀 파일 다운로드</a>'
-    return href
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
+
+def get_excel_download_link(df, filename="데이터.xlsx"):
+    """Generates a link allowing the data in a given panda dataframe to be downloaded as an excel file"""
+    val = to_excel(df)
+    b64 = base64.b64encode(val)
+    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">엑셀 파일 다운로드</a>'
 
 # 검색 버튼이 클릭되었을 때
 if submit_button and query:
@@ -118,4 +128,24 @@ if st.session_state.search_results:
 
 # 페이지 하단 정보
 st.markdown("---")
-st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.") 
+st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.")
+
+# 디버깅 섹션 추가
+st.subheader("디버깅 정보")
+if st.button("테스트 실행"):
+    # 디버깅 로그 초기화
+    debug_logs = []
+    
+    # 테스트 키워드로 크롤링 실행
+    test_keyword = "파이썬"
+    log_debug(f"테스트 키워드: {test_keyword}")
+    
+    try:
+        results = get_naver_keywords(test_keyword)
+        log_debug(f"반환된 결과: {results}")
+    except Exception as e:
+        log_debug(f"에러 발생: {str(e)}")
+
+# 디버깅 로그 표시
+for log in debug_logs:
+    st.text(log) 
