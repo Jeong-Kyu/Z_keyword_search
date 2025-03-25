@@ -65,16 +65,18 @@ def get_chrome_driver():
                 raise Exception(error_message)
 
 def get_naver_keywords(search_query):
-    driver = get_chrome_driver()
-    
-    # 결과 저장용 딕셔너리
-    results = {
-        "연관 검색어": [],
-        "함께 많이 찾는 검색어": [],
-        "인기주제": []
-    }
-    
+    """네이버 연관 검색어 크롤링"""
+    driver = None
     try:
+        driver = get_chrome_driver()
+        
+        # 결과 저장용 딕셔너리
+        results = {
+            "연관 검색어": [],
+            "함께 많이 찾는 검색어": [],
+            "인기주제": []
+        }
+        
         # 네이버 검색 페이지 접속
         url = f"https://search.naver.com/search.naver?query={search_query}"
         driver.get(url)
@@ -115,13 +117,17 @@ def get_naver_keywords(search_query):
         except:
             pass
             
+        return results  # 결과 반환
     except Exception as e:
-        print(f"오류 발생: {str(e)}")
+        print(f"키워드 추출 중 오류 발생: {str(e)}")
+        return []  # 오류 발생 시 빈 리스트 반환
     finally:
-        driver.quit()
-    
-    return results
-
+        # driver가 None이 아닌 경우에만 quit() 호출
+        if driver is not None:
+            try:
+                driver.quit()
+            except:
+                pass
 
 def create_keywords_dataframe(data):
     """데이터를 pandas DataFrame으로 변환"""
