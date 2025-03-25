@@ -4,12 +4,6 @@ import time
 from crawler import get_naver_keywords, create_keywords_dataframe
 import base64
 from io import BytesIO
-# 배포 환경을 위한 추가 패키지
-import os
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 
 # 페이지 설정
 st.set_page_config(
@@ -52,13 +46,6 @@ def get_excel_download_link(df, filename="keywords_data.xlsx"):
     b64 = base64.b64encode(excel_data).decode()
     href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{filename}">엑셀 파일 다운로드</a>'
     return href
-
-# 전역 변수로 디버깅 정보 저장
-debug_logs = []
-
-def log_debug(message):
-    """디버깅 정보 로깅"""
-    debug_logs.append(message)
 
 # 검색 버튼이 클릭되었을 때
 if submit_button and query:
@@ -131,44 +118,4 @@ if st.session_state.search_results:
 
 # 페이지 하단 정보
 st.markdown("---")
-st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.")
-
-def main():
-    # 디버깅 섹션 추가 (항상 표시)
-    st.subheader("디버깅 정보")
-    if st.button("테스트 실행"):
-        # 디버깅 로그 초기화
-        global debug_logs
-        debug_logs = []
-        
-        # 테스트 키워드로 크롤링 실행
-        test_keyword = "파이썬"
-        log_debug(f"테스트 키워드: {test_keyword}")
-        
-        try:
-            from crawler import get_naver_keywords
-            results = get_naver_keywords(test_keyword)
-            log_debug(f"반환된 결과: {results}")
-        except Exception as e:
-            log_debug(f"에러 발생: {str(e)}")
-    
-    # 디버깅 로그 표시
-    for log in debug_logs:
-        st.text(log)
-
-    # 검색어 입력 필드 등 기존 코드
-    
-    # 디버깅 섹션 추가
-    with st.expander("디버깅 정보"):
-        if st.button("디버깅 테스트 실행"):
-            debug_info = []
-            # 디버깅 함수로 수정 (출력 대신 리스트에 정보 추가)
-            def debug_print(info):
-                debug_info.append(info)
-                
-            # 여기서 크롤링 코드 실행하고 debug_print 함수 사용
-            # ... 크롤링 코드 ...
-            
-            # 디버깅 정보 표시
-            for info in debug_info:
-                st.text(info) 
+st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.") 
