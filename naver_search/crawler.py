@@ -1,3 +1,6 @@
+import os
+import shutil
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -15,23 +18,51 @@ def get_chrome_driver():
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--remote-debugging-port=9222")
     
-    # Streamlit Cloud 환경에서 작동하는 방식
+    # Streamlit Cloud의 Chrome 버전 확인
     try:
-        # Streamlit Cloud의 고정된 ChromeDriver 경로 사용
-        driver = webdriver.Chrome(
-            executable_path="/usr/bin/chromedriver",
-            options=chrome_options
-        )
-    except Exception as e:
-        # 로컬 환경에서는 기존 방식 사용
-        try:
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-        except Exception as e2:
-            raise Exception(f"Chrome 드라이버 초기화 실패: {str(e)} / {str(e2)}")
+        chrome_version = subprocess.check_output(["chromium-browser", "--version"]).decode().strip()
+        print(f"Detected Chrome version: {chrome_version}")
+    except:
+        print("Could not detect Chrome version")
     
-    return driver
+    try:
+        # Streamlit Cloud에서는 system Chromium과 ChromeDriver 사용
+        driver = webdriver.Chrome(options=chrome_options)
+        print("성공: 시스템 ChromeDriver 사용")
+        return driver
+    except Exception as e1:
+        print(f"첫 번째 방법 실패: {str(e1)}")
+        
+        try:
+            # 두 번째 방법: 명시적 경로 지정
+            driver_path = "/usr/bin/chromedriver"
+            if os.path.exists(driver_path):
+                # 권한 확인 및 수정
+                try:
+                    os.chmod(driver_path, 0o755)  # 실행 권한 설정
+                except:
+                    pass
+                    
+                driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
+                print("성공: 고정 경로 ChromeDriver 사용")
+                return driver
+            else:
+                print(f"ChromeDriver가 {driver_path}에 존재하지 않음")
+        except Exception as e2:
+            print(f"두 번째 방법 실패: {str(e2)}")
+            
+            try:
+                # 마지막 방법: WebDriver Manager 사용 시도
+                service = Service(ChromeDriverManager().install())
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                print("성공: WebDriverManager 사용")
+                return driver
+            except Exception as e3:
+                error_message = f"Chrome 드라이버 초기화 실패:\n1) {str(e1)}\n2) {str(e2)}\n3) {str(e3)}"
+                print(error_message)
+                raise Exception(error_message)
 
 def get_naver_keywords(search_query):
     driver = get_chrome_driver()
