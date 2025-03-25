@@ -14,6 +14,8 @@ def get_naver_keywords(search_query):
     chrome_options.add_argument("--headless")  # 브라우저를 표시하지 않음
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.binary_location = "/usr/bin/chromium-browser"
     
     # 웹드라이버 설정
     service = Service(ChromeDriverManager().install())
@@ -52,6 +54,7 @@ def get_naver_keywords(search_query):
             )
             for keyword in also_searched:
                 results["함께 많이 찾는 검색어"].append(keyword.text)
+                
         except:
             pass
         
