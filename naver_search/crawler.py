@@ -87,7 +87,7 @@ def get_naver_keywords(search_query):
         # 연관검색어 추출
         try:
             related_keywords = WebDriverWait(driver, 5).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".api_subject_bx._related_box .keyword"))
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".pack_group"))
             )
             for keyword in related_keywords:
                 results["연관 검색어"].append(keyword.text)
