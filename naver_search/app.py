@@ -4,6 +4,12 @@ import time
 from crawler import get_naver_keywords, create_keywords_dataframe
 import base64
 from io import BytesIO
+# 배포 환경을 위한 추가 패키지
+import os
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
 # 페이지 설정
 st.set_page_config(

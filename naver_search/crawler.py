@@ -8,18 +8,26 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 
-def get_naver_keywords(search_query):
-    # 크롬 옵션 설정
+def get_chrome_driver():
+    """헤드리스 크롬 드라이버 설정"""
     chrome_options = Options()
-    chrome_options.add_argument("--headless")  # 브라우저를 표시하지 않음
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.binary_location = "/usr/bin/chromium-browser"
     
-    # 웹드라이버 설정
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # 배포 환경에서 사용할 수 있는 크롬드라이버 설정
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    except:
+        # 백업 방법: 배포 환경에 설치된 크롬드라이버 사용
+        driver = webdriver.Chrome(options=chrome_options)
+    
+    return driver
+
+def get_naver_keywords(search_query):
+    driver = get_chrome_driver()
     
     # 결과 저장용 딕셔너리
     results = {
