@@ -4,6 +4,7 @@ import time
 from crawler import get_naver_keywords, create_keywords_dataframe
 import base64
 from io import BytesIO
+import traceback
 
 # 페이지 설정
 st.set_page_config(
@@ -36,23 +37,66 @@ if "search_results" not in st.session_state:
     st.session_state.search_results = None
     st.session_state.searched_query = None
 
-# 엑셀 다운로드 함수
-def get_excel_download_link(df, filename="keywords_data.xlsx"):
-    """DataFrame을 엑셀 파일로 변환하고 다운로드 링크 생성"""
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Keywords')
-    excel_data = output.getvalue()
-    b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{filename}">엑셀 파일 다운로드</a>'
-    return href
+# 디버깅 로그 저장용 리스트
+if 'debug_logs' not in st.session_state:
+    st.session_state['debug_logs'] = []
+
+def log_debug(message):
+    """디버깅 정보 로깅"""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    log_message = f"[{timestamp}] {message}"
+    st.session_state['debug_logs'].append(log_message)
+    print(log_message)  # 콘솔에도 출력
+
+def to_excel(df):
+    """데이터프레임을 엑셀 바이트로 변환"""
+    try:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
+        return output.getvalue()
+    except Exception as e:
+        log_debug(f"엑셀 변환 오류: {str(e)}")
+        return None
+
+def get_excel_download_link(df, filename="데이터.xlsx"):
+    """엑셀 다운로드 링크 생성"""
+    try:
+        val = to_excel(df)
+        if val is None:
+            log_debug("엑셀 데이터 생성 실패")
+            return "엑셀 다운로드 링크 생성 실패"
+        
+        b64 = base64.b64encode(val)
+        return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">엑셀 파일 다운로드</a>'
+    except Exception as e:
+        log_debug(f"다운로드 링크 생성 오류: {str(e)}")
+        return "다운로드 링크 생성 실패"
+
+def create_keywords_dataframe(related_keywords):
+    """연관 검색어로 데이터프레임 생성"""
+    try:
+        if not related_keywords:
+            log_debug("비어있는 키워드 목록으로 DataFrame 생성 시도")
+            return pd.DataFrame()
+        
+        log_debug(f"DataFrame 생성: {len(related_keywords)}개 키워드")
+        df = pd.DataFrame({
+            '연관 검색어': related_keywords
+        })
+        return df
+    except Exception as e:
+        log_debug(f"DataFrame 생성 오류: {str(e)}")
+        return pd.DataFrame()
 
 # 검색 버튼이 클릭되었을 때
 if submit_button and query:
     with st.spinner("네이버에서 데이터를 가져오는 중..."):
         try:
             # 데이터 가져오기
+            log_debug("크롤링 함수 호출 시작")
             results = get_naver_keywords(query)
+            log_debug(f"크롤링 완료: {len(results)}개 결과")
             st.session_state.search_results = results
             st.session_state.searched_query = query
             
@@ -60,7 +104,10 @@ if submit_button and query:
             st.success(f"'{query}' 검색 결과가 성공적으로 로드되었습니다!")
             
         except Exception as e:
-            st.error(f"오류 발생: {str(e)}")
+            error_details = traceback.format_exc()
+            log_debug(f"오류 발생: {str(e)}")
+            log_debug(f"오류 상세: {error_details}")
+            st.error(f"오류가 발생했습니다: {str(e)}")
 
 # 검색 결과가 있으면 표시
 if st.session_state.search_results:
@@ -118,4 +165,39 @@ if st.session_state.search_results:
 
 # 페이지 하단 정보
 st.markdown("---")
-st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.") 
+st.markdown("© 네이버 검색어 분석기 | 데이터는 네이버로부터 수집됩니다.")
+
+# 디버깅 섹션
+st.markdown("---")
+with st.expander("디버깅 정보"):
+    # 모듈 가져오기 상태 표시
+    st.text(f"크롤러 모듈 가져오기: {st.session_state.get('crawler_import', '정보 없음')}")
+    
+    # 테스트 버튼
+    if st.button("테스트 실행"):
+        # 디버깅 로그 초기화
+        st.session_state['debug_logs'] = []
+        
+        # 테스트 키워드로 크롤링 실행
+        test_keyword = "파이썬"
+        log_debug(f"테스트 키워드: {test_keyword}")
+        
+        try:
+            log_debug("테스트 크롤링 시작")
+            results = get_naver_keywords(test_keyword)
+            log_debug(f"테스트 크롤링 완료: {len(results)}개 결과")
+            log_debug(f"반환된 결과: {results}")
+        except Exception as e:
+            error_details = traceback.format_exc()
+            log_debug(f"테스트 중 오류 발생: {str(e)}")
+            log_debug(f"오류 상세: {error_details}")
+    
+    # 로그 지우기 버튼
+    if st.button("로그 지우기"):
+        st.session_state['debug_logs'] = []
+        st.experimental_rerun()
+    
+    # 디버깅 로그 표시
+    st.text("=== 디버깅 로그 ===")
+    for log in st.session_state['debug_logs']:
+        st.text(log) 
