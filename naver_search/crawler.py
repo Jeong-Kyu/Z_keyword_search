@@ -91,6 +91,7 @@ def get_naver_keywords(search_query):
             )
             for keyword in related_keywords:
                 results["연관 검색어"].append(keyword.text)
+            print(related_keywords)
         except:
             pass
         
@@ -102,7 +103,7 @@ def get_naver_keywords(search_query):
             )
             for keyword in also_searched:
                 results["함께 많이 찾는 검색어"].append(keyword.text)
-                
+            print(also_searched)
         except:
             pass
         
@@ -114,6 +115,7 @@ def get_naver_keywords(search_query):
             )
             for topic in popular_topics:
                 results["인기주제"].append(topic.text)
+            print(popular_topics)
         except:
             pass
             
